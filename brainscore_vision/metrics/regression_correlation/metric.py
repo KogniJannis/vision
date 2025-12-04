@@ -129,13 +129,13 @@ def ridge_regression(regression_kwargs=None, xarray_kwargs=None):
     return regression
 
 ALPHA_LIST = [
-    *np.geomspace(1e-4, 1e0, 5),
+    *[0.0001, 0.001, 0.01, 0.1, 1.0],
     *np.linspace(1e1, 1e2, 3, endpoint=False),
     *np.linspace(1e2, 1e3, 3, endpoint=False),
     *np.linspace(1e3, 1e4, 3, endpoint=False),
-    *np.linspace(1e4, 1e5, 5, endpoint=False),
-    *np.linspace(1e5, 1e6, 5, endpoint=False),
-    *np.linspace(1e6, 1e7, 6)
+    *[1e4, 2e4, 4e4, 6e4, 8e4],
+    *[1e5, 2e5, 4e5, 6e5, 8e5],
+    *[1e6, 2e6, 4e6, 6e6, 8e6, 1e7]
 ]
 def ridge_cv_regression(regression_kwargs=None, xarray_kwargs=None, gpu_enabled=True):
     regression_defaults = dict(alphas=ALPHA_LIST, store_cv_results=True)
