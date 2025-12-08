@@ -87,11 +87,17 @@ class ImageConverter:
             self._write(converted_image, target_path=target_path)
             return target_path
 
-    def apply_ratio(self, image: Image, ratio: float, background_color='gray'):
+    def apply_ratio(self, image: Image, ratio: float, background_color='gray', max_pixels=1000000):
         image_size = np.array(image.size)
         target_image_size = (ratio * image_size).round().astype(int)
         if ratio >= 1:  # enlarge the image
-            return self._enlarge(image, target_image_size, background_color=background_color)
+            base_pixels = image_size[0] * image_size[1]
+            if base_pixels > max_pixels:
+                _logger.warning(f"Large image encountered ({image_size[0]}x{image_size[1]}={int(base_pixels)} pixels), downscaling before enlargement")
+                return self._savely_enlarge_huge_image(image, ratio, background_color=background_color,
+                                                        max_pixels=max_pixels)
+            else:
+                return self._enlarge(image, target_image_size, background_color=background_color)
         else:  # crop the image
             return self._center_crop(image, target_image_size)
 
@@ -100,6 +106,21 @@ class ImageConverter:
         center_topleft = ((target_size - image.size) / 2).round().astype(int)
         background_image.paste(image, tuple(center_topleft))
         return background_image
+
+    def _savely_enlarge_huge_image(self, image, ratio, background_color, max_pixels):
+        """
+        Enlarge an image that exceeds the max_pixels limit by first downscaling it.
+        This prevents issues with PIL pixel limits when working with high resolution images.
+        """
+        image_size = np.array(image.size)
+        current_pixels = image_size[0] * image_size[1]
+        scale_factor = np.sqrt(max_pixels / current_pixels)
+        downscaled_size = (image_size * scale_factor).round().astype(int)
+        downscaled_image = image.resize(tuple(downscaled_size), Image.LANCZOS)
+        
+        # Calculate new background size based on the new downscaled size of the image
+        target_size = (ratio * downscaled_size).round().astype(int)
+        return self._enlarge(downscaled_image, target_size, background_color)
 
     def _center_crop(self, image, crop_size):
         left, upper = ((image.size - crop_size) / 2).round().astype(int)
