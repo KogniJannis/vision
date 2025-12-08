@@ -1,4 +1,6 @@
 import logging
+import os
+from pathlib import Path
 
 from result_caching import store_xarray, store
 from tqdm import tqdm
@@ -133,6 +135,7 @@ class LayerScores:
             score = score.expand_dims('layer')
             score['layer'] = [layer]
             layer_scores.append(score)
+        self.save_layer_scores(layer_scores, model_identifier, benchmark_identifier, benchmark.region)
         layer_scores = Score.merge(*layer_scores)
         layer_scores = layer_scores.sel(layer=layers)  # preserve layer ordering
         return layer_scores
@@ -141,6 +144,16 @@ class LayerScores:
         return LayerMappedModel(identifier=f"{model_identifier}-{layer}", visual_degrees=visual_degrees,
                                 # per-layer identifier to avoid overlap
                                 activations_model=model, region_layer_map={region: layer})
+
+    def save_layer_scores(self, layer_scores, model_identifier, benchmark_identifier, region,
+                          path=Path(os.getenv('BRAINSCORE_HOME', '~/.brain-score')).expanduser() / "layer_scores"):
+        import pickle
+        import datetime
+        timestamp = datetime.datetime.now().strftime("%Y%m%dT%H%M%S")
+        save_path = os.path.join(path, f"{model_identifier}__{benchmark_identifier}__{region}_{timestamp}.pkl")
+        os.makedirs(path, exist_ok=True)
+        with open(save_path, 'wb') as f:
+            pickle.dump(layer_scores, f)
 
 
 class PreRunLayers:
