@@ -38,7 +38,15 @@ class PytorchWrapper:
         self._extractor.identifier = value
 
     def __call__(self, *args, **kwargs):  # cannot assign __call__ as attribute due to Python convention
-        return self._extractor(*args, **kwargs)
+        import torch
+        self._model = self._model.to(self._device)
+        try:
+            return self._extractor(*args, **kwargs)
+        finally:
+            # Prevent models being left on GPU after activations extraction
+            if self._device.type == 'cuda':
+                self._model = self._model.to('cpu')
+                torch.cuda.empty_cache()
 
     def get_activations(self, images, layer_names):
         import torch
