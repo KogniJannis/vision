@@ -1,0 +1,137 @@
+{
+  "convnext_large_mlp:clip_laion2b_augreg_ft_in1k_384_fov4": {
+    "model_name": "convnext_large_mlp",
+    "model_id": "convnext_large_mlp:clip_laion2b_augreg_ft_in1k_384_fov4",
+    "timm_model_name": "convnext_large_mlp.clip_laion2b_augreg_ft_in1k_384",
+    "is_vit": false,
+    "model_commitment": {
+      "layers": [
+        "stages.2.blocks.4.conv_dw",
+        "stages.2.blocks.3",
+        "stages.2.blocks.4.conv_dw",
+        "stages.2.downsample.1",
+        "head.pre_logits"
+      ]
+    }
+  },
+  "convnext_large_mlp:clip_laion2b_augreg_ft_in1k_384_fov12": {
+    "model_name": "convnext_large_mlp",
+    "model_id": "convnext_large_mlp:clip_laion2b_augreg_ft_in1k_384_fov12",
+    "timm_model_name": "convnext_large_mlp.clip_laion2b_augreg_ft_in1k_384",
+    "is_vit": false,
+    "model_commitment": {
+      "layers": [
+        "stages.2.blocks.4.conv_dw",
+        "stages.2.blocks.3",
+        "stages.2.blocks.4.conv_dw",
+        "stages.2.downsample.1",
+        "head.pre_logits"
+      ]
+    }
+  },
+  "convnext_large_mlp:clip_laion2b_augreg_ft_in1k_384_fov16": {
+    "model_name": "convnext_large_mlp",
+    "model_id": "convnext_large_mlp:clip_laion2b_augreg_ft_in1k_384_fov16",
+    "timm_model_name": "convnext_large_mlp.clip_laion2b_augreg_ft_in1k_384",
+    "is_vit": false,
+    "model_commitment": {
+      "layers": [
+        "stages.2.blocks.4.conv_dw",
+        "stages.2.blocks.3",
+        "stages.2.blocks.4.conv_dw",
+        "stages.2.downsample.1",
+        "head.pre_logits"
+      ]
+    }
+  },
+  "vit_base_patch16_clip_224:openai_ft_in12k_in1k_fov4": {
+    "model_name": "vit_base_patch16_clip_224",
+    "model_id": "vit_base_patch16_clip_224:openai_ft_in12k_in1k_fov4",
+    "timm_model_name": "vit_base_patch16_clip_224.openai_ft_in12k_in1k",
+    "is_vit": true,
+    "model_commitment": {
+      "layers": [
+        "blocks.6.norm2",
+        "blocks.2.attn",
+        "blocks.2.attn",
+        "blocks.2.attn",
+        "fc_norm"
+      ]
+    }
+  },
+  "vit_base_patch16_clip_224:openai_ft_in12k_in1k_fov12": {
+    "model_name": "vit_base_patch16_clip_224",
+    "model_id": "vit_base_patch16_clip_224:openai_ft_in12k_in1k_fov12",
+    "timm_model_name": "vit_base_patch16_clip_224.openai_ft_in12k_in1k",
+    "is_vit": true,
+    "model_commitment": {
+      "layers": [
+        "blocks.6.norm2",
+        "blocks.2.attn",
+        "blocks.2.attn",
+        "blocks.2.attn",
+        "fc_norm"
+      ]
+    }
+  },
+  "vit_base_patch16_clip_224:openai_ft_in12k_in1k_fov16": {
+    "model_name": "vit_base_patch16_clip_224",
+    "model_id": "vit_base_patch16_clip_224:openai_ft_in12k_in1k_fov16",
+    "timm_model_name": "vit_base_patch16_clip_224.openai_ft_in12k_in1k",
+    "is_vit": true,
+    "model_commitment": {
+      "layers": [
+        "blocks.6.norm2",
+        "blocks.2.attn",
+        "blocks.2.attn",
+        "blocks.2.attn",
+        "fc_norm"
+      ]
+    }
+  },
+  "vit_large_patch14_clip_224:laion2b_ft_in1k_fov4": {
+    "model_name": "vit_large_patch14_clip_224",
+    "model_id": "vit_large_patch14_clip_224:laion2b_ft_in1k_fov4",
+    "timm_model_name": "vit_large_patch14_clip_224.laion2b_ft_in1k",
+    "is_vit": true,
+    "model_commitment": {
+      "layers": [
+        "blocks.9.attn",
+        "blocks.4.attn.qkv",
+        "blocks.8.attn",
+        "blocks.5.attn",
+        "fc_norm"
+      ]
+    }
+  },
+  "vit_large_patch14_clip_224:laion2b_ft_in1k_fov12": {
+    "model_name": "vit_large_patch14_clip_224",
+    "model_id": "vit_large_patch14_clip_224:laion2b_ft_in1k_fov12",
+    "timm_model_name": "vit_large_patch14_clip_224.laion2b_ft_in1k",
+    "is_vit": true,
+    "model_commitment": {
+      "layers": [
+        "blocks.9.attn",
+        "blocks.4.attn.qkv",
+        "blocks.8.attn",
+        "blocks.5.attn",
+        "fc_norm"
+      ]
+    }
+  },
+  "vit_large_patch14_clip_224:laion2b_ft_in1k_fov16": {
+    "model_name": "vit_large_patch14_clip_224",
+    "model_id": "vit_large_patch14_clip_224:laion2b_ft_in1k_fov16",
+    "timm_model_name": "vit_large_patch14_clip_224.laion2b_ft_in1k",
+    "is_vit": true,
+    "model_commitment": {
+      "layers": [
+        "blocks.9.attn",
+        "blocks.4.attn.qkv",
+        "blocks.8.attn",
+        "blocks.5.attn",
+        "fc_norm"
+      ]
+    }
+  }
+}
