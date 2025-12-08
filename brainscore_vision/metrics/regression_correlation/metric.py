@@ -13,6 +13,9 @@ from brainscore_vision.metrics.regression_correlation.ridgecv_gpu import RidgeGC
 
 from torch import cuda
 
+import logging
+_logger = logging.getLogger(__name__)
+
 
 class CrossRegressedCorrelation(Metric):
     def __init__(self, regression, correlation, crossvalidation_kwargs=None):
@@ -142,8 +145,10 @@ def ridge_cv_regression(regression_kwargs=None, xarray_kwargs=None, gpu_enabled=
     regression_kwargs = {**regression_defaults, **(regression_kwargs or {})}
     regression_kwargs.pop('alpha', None)  # RidgeCV does not accept 'alpha' as a parameter
     if cuda.is_available() and gpu_enabled:
+        _logger.info("Using RidgeGCVTorch for ridge CV regression.")
         regression = RidgeGCVTorch(**regression_kwargs, store_results_gpu=False)
     else:
+        _logger.info("Using RidgeCV for ridge CV regression.")
         regression = RidgeCV(**regression_kwargs)
     xarray_kwargs = xarray_kwargs or {}
     regression = XarrayRegression(regression, **xarray_kwargs)
