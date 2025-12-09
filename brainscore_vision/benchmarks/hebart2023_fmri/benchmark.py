@@ -1,5 +1,6 @@
 from brainscore_vision import load_dataset, load_metric
 from brainscore_vision.benchmark_helpers.neural_common import TrainTestNeuralBenchmark, average_repetition, filter_reliable_neuroids
+from brainscore_vision.metrics.regression_correlation.metric import ALPHA_LIST
 from brainscore_vision.utils import LazyLoad
 
 
@@ -58,8 +59,8 @@ def _Hebart2023fmri(region,
 	                          parent=region,
 							  bibtex=BIBTEX)    
 
-def Hebart2023fmri(region, metric_type, gpu_enabled=True):
-    similarity_metric = load_metric(f'{metric_type}_split', gpu_enabled=gpu_enabled)
+def Hebart2023fmri(region, metric_type, alphas=ALPHA_LIST, gpu_enabled=True):
+    similarity_metric = load_metric(f'{metric_type}_split', alphas=alphas, gpu_enabled=gpu_enabled)
     return _Hebart2023fmri(region, similarity_metric=similarity_metric, identifier_metric_suffix=metric_type,
 						   alpha_coord='subject', per_voxel_ceilings=False)
 
