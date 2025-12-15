@@ -10,6 +10,7 @@ from brainscore_vision.metric_helpers.transformations import CrossValidation, ap
 from brainscore_vision.metric_helpers.xarray_utils import XarrayRegression, XarrayCorrelation
 from brainscore_vision.metric_helpers.temporal import SpanTimeRegression, PerTime
 
+from.ridgecv_cpu import RidgeGCVCPU
 
 class CrossRegressedCorrelation(Metric):
     def __init__(self, regression, correlation, crossvalidation_kwargs=None):
@@ -134,12 +135,12 @@ ALPHA_LIST = [
     *np.linspace(1e5, 1e6, 18, endpoint=False),
     *np.linspace(1e6, 1e7, 19)
 ]
-def ridge_cv_regression(regression_kwargs=None, xarray_kwargs=None, alphas=ALPHA_LIST):
-    regression_defaults = dict(alphas=alphas, store_cv_results=False)
+def ridge_cv_regression(regression_kwargs=None, xarray_kwargs=None, alphas=ALPHA_LIST,  eigh_driver='evr'):
+    regression_defaults = dict(alphas=alphas, store_cv_results=False, eigh_driver=eigh_driver)
     regression_kwargs = {**regression_defaults, **(regression_kwargs or {})}
     regression_kwargs.pop('alpha', None)  # RidgeCV does not accept 'alpha' as a parameter
     
-    regression = RidgeCV(**regression_kwargs)
+    regression = RidgeGCVCPU(**regression_kwargs)
     xarray_kwargs = xarray_kwargs or {}
     regression = XarrayRegression(regression, **xarray_kwargs)
     return regression
