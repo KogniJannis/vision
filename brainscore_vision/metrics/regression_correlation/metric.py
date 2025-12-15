@@ -94,7 +94,7 @@ class TrainTestSplitCorrelation(Metric):
         prediction = self.regression.predict(source_test)
         score = self.correlation(prediction, target_test)
         
-        if self.regression._regression.__class__ in [RidgeCV]:
+        if self.regression._regression.__class__ in [RidgeCV, RidgeGCVCPU]:
             score.attrs['alpha'] = self.regression._regression.alpha_
             
         return score
