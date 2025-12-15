@@ -241,6 +241,10 @@ class ActivationsExtractorHelper:
         # complication: (non)neuroid_coords are taken from the structure of layer_assemblies[0] i.e. the 1st assembly;
         # using these names/keys for all assemblies results in KeyError if the first layer contains flatten_coord_names
         # (see _package_layer) not present in later layers, e.g. first layer = conv, later layer = transformer layer
+        if len(layer_assemblies) == 1:
+            self._logger.debug("Fastpathing single layer assembly")
+            return layer_assemblies[0]
+        
         self._logger.debug(f"Merging {len(layer_assemblies)} layer assemblies")
         model_assembly = np.concatenate([a.values for a in layer_assemblies],
                                         axis=layer_assemblies[0].dims.index('neuroid'))
