@@ -1,10 +1,13 @@
 import numpy as np
 import xarray as xr
+from collections import defaultdict, deque
 
 from brainscore_core.supported_data_standards.brainio.assemblies import NeuroidAssembly, array_is_element, walk_coords
 from brainscore_vision.metric_helpers import Defaults
 from brainscore_vision.metrics import Score
 
+import logging
+logger = logging.getLogger(__name__)
 
 class XarrayRegression:
     """
@@ -12,17 +15,20 @@ class XarrayRegression:
     """
 
     def __init__(self, regression, expected_dims=Defaults.expected_dims, neuroid_dim=Defaults.neuroid_dim,
-                 neuroid_coord=Defaults.neuroid_coord, stimulus_coord=Defaults.stimulus_coord):
+                 neuroid_coord=Defaults.neuroid_coord, stimulus_dim=Defaults.stimulus_dim, stimulus_coord=Defaults.stimulus_coord):
         self._regression = regression
         self._expected_dims = expected_dims
         self._neuroid_dim = neuroid_dim
         self._neuroid_coord = neuroid_coord
+        self._stimulus_dim = stimulus_dim
         self._stimulus_coord = stimulus_coord
         self._target_neuroid_values = None
 
     def fit(self, source, target, **kwargs):
+        logger.debug("Aligning source and target assemblies...")
         source, target = self._align(source), self._align(target)
-        source, target = source.sortby(self._stimulus_coord), target.sortby(self._stimulus_coord)
+        target = self._align_target_with_source(source, target)
+        logger.debug("Assemblies aligned, XarrayRegression calls fit")
 
         self._regression.fit(source, target, **kwargs)
 
@@ -31,6 +37,48 @@ class XarrayRegression:
             if self._neuroid_dim in dims:
                 assert array_is_element(dims, self._neuroid_dim)
                 self._target_neuroid_values[name] = values
+
+    def _align_target_with_source(self, source, target):
+        """
+        Reorder the target assembly to match the order of presentations in the source assembly.
+        This replaces the old way of securing alignment, which sorted both arrays:
+        source, target = source.sortby(self._stimulus_coord), target.sortby(self._stimulus_coord)
+        If source is a large array from a DNN with many features, sorting can be slow and memory-intensive.
+        This method handles duplicates, if we are sure there are no duplicates we could optimize further.
+        """
+        
+        
+        s_idx = source.coords[self._stimulus_coord].to_index()
+        t_idx = target.coords[self._stimulus_coord].to_index()
+
+        if len(s_idx) != len(t_idx):
+            raise ValueError(
+                f"Assemblies must have same number of presentations"
+            )
+
+        # Map label -> queue of positions where it appears in target_index
+        positions_in_target = defaultdict(deque)
+        for pos, label in enumerate(t_idx):
+            positions_in_target[label].append(pos)
+
+        # For each label in source, pop one unused matching position from target
+        reordering = []
+        for label in s_idx:
+            q = positions_in_target.get(label)
+            if not q:
+                raise KeyError(
+                    f"Cannot match label {label!r}: target_index is missing it or duplicates do not match"
+                )
+            reordering.append(q.popleft())
+
+        # Ensure we used every target position exactly once
+        leftovers = {k: len(v) for k, v in positions_in_target.items() if len(v) > 0}
+        if leftovers:
+            raise ValueError(
+                "Found unmatched labels while matching assemblies for regression"
+            )
+
+        return target.isel({self._stimulus_dim: reordering})
 
     def predict(self, source):
         source = self._align(source)
