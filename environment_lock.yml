@@ -143,7 +143,7 @@ dependencies:
       - qtpy==2.4.1
       - referencing==0.35.1
       - requests==2.32.3
-      - result_caching==0.1.0
+      - result_caching @ git+https://github.com/KogniJannis/result_caching.git@add-fastpaths
       - rfc3339-validator==0.1.4
       - rfc3986-validator==0.1.1
       - rpds-py==0.20.0
