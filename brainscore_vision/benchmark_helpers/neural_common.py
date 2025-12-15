@@ -95,12 +95,16 @@ class TrainTestNeuralBenchmark(BenchmarkBase):
             Note: we aggregate neuroids for each slice and then ceil the slice, meaning the overall ceiling is not applied directly
             score.attrs[alpha_coord_value] will contain the standard score object with per neuroid raw and ceiling values
         """
+        self.current_model = candidate.identifier # use model identifier for caching
         
         # get the activations from the train set
         train_stimulus_set = self.train_assembly.stimulus_set
         candidate.start_recording(self.region, time_bins=self.timebins)
         stimulus_set = place_on_screen(train_stimulus_set, target_visual_degrees=candidate.visual_degrees(),
                                         source_visual_degrees=self._visual_degrees)
+        
+        # store new identifier after placing on screen to cache matrices if using ridgecv
+        self.train_stimuli_identifier = stimulus_set.identifier
         self.train_activations = candidate.look_at(stimulus_set, number_of_trials=self._number_of_trials)
 
         # get the activations from the test set
@@ -173,10 +177,15 @@ class TrainTestNeuralBenchmark(BenchmarkBase):
         ceiling_values : DataArray, the ceiling values for each neuroid
         apply_ceiling : function, method how to apply ceilings (per neuroid or overall)
         """
+        fitting_kwargs = {'model_id': self.current_model,
+                          'stimuli_identifier': self.train_stimuli_identifier, 
+                          'number_of_trials': self._number_of_trials, 
+                          'require_variance': False}
         raw_score = self._similarity_metric(source_train=self.train_activations,
                                             target_train=train_data,
                                             source_test=self.test_activations,
-                                            target_test=test_data)
+                                            target_test=test_data,
+                                            fitting_kwargs=fitting_kwargs)
         ceiled_score = apply_ceiling(raw_score, ceiling_values)
         return ceiled_score
 

@@ -20,11 +20,11 @@ class XarrayRegression:
         self._stimulus_coord = stimulus_coord
         self._target_neuroid_values = None
 
-    def fit(self, source, target):
+    def fit(self, source, target, **kwargs):
         source, target = self._align(source), self._align(target)
         source, target = source.sortby(self._stimulus_coord), target.sortby(self._stimulus_coord)
 
-        self._regression.fit(source, target)
+        self._regression.fit(source, target, **kwargs)
 
         self._target_neuroid_values = {}
         for name, dims, values in walk_coords(target):

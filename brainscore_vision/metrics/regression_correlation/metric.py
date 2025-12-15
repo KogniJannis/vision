@@ -84,13 +84,13 @@ class TrainTestSplitCorrelation(Metric):
         self.correlation = correlation
 
     def __call__(self, source_train: DataAssembly, source_test: DataAssembly,
-                target_train: DataAssembly, target_test: DataAssembly) -> Score:
-        scores = self.apply(source_train, target_train, source_test, target_test)
+                target_train: DataAssembly, target_test: DataAssembly, **kwargs) -> Score:
+        scores = self.apply(source_train, target_train, source_test, target_test, **kwargs)
         score = apply_aggregate(self.aggregate, scores)    #take median across neuroids
         return score
 
-    def apply(self, source_train, target_train, source_test, target_test):
-        self.regression.fit(source_train, target_train)
+    def apply(self, source_train, target_train, source_test, target_test, **kwargs):
+        self.regression.fit(source_train, target_train, **kwargs)
         prediction = self.regression.predict(source_test)
         score = self.correlation(prediction, target_test)
         
