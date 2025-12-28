@@ -9,6 +9,12 @@ from brainscore_core.metrics import Metric, Score
 from brainscore_vision.metric_helpers.transformations import CrossValidation, apply_aggregate
 from brainscore_vision.metric_helpers.xarray_utils import XarrayRegression, XarrayCorrelation
 from brainscore_vision.metric_helpers.temporal import SpanTimeRegression, PerTime
+from brainscore_vision.metrics.regression_correlation.ridgecv_gpu import RidgeGCVTorch
+
+from torch import cuda
+import logging
+
+_logger = logging.getLogger(__name__)
 
 
 class CrossRegressedCorrelation(Metric):
@@ -93,7 +99,10 @@ class TrainTestSplitCorrelation(Metric):
         prediction = self.regression.predict(source_test)
         score = self.correlation(prediction, target_test)
         
-        if self.regression._regression.__class__ in [RidgeCV]:
+        if self.regression._regression.__class__ in [
+                                                    RidgeCV,
+                                                    RidgeGCVTorch,
+                                                    ]:
             score.attrs['alpha'] = self.regression._regression.alpha_
             
         return score
@@ -134,12 +143,16 @@ ALPHA_LIST = [
     *np.linspace(1e5, 1e6, 18, endpoint=False),
     *np.linspace(1e6, 1e7, 19)
 ]
-def ridge_cv_regression(regression_kwargs=None, xarray_kwargs=None, alphas=ALPHA_LIST):
+def ridge_cv_regression(regression_kwargs=None, xarray_kwargs=None, alphas=ALPHA_LIST, gpu_enabled=True):
     regression_defaults = dict(alphas=alphas, store_cv_results=True)
     regression_kwargs = {**regression_defaults, **(regression_kwargs or {})}
     regression_kwargs.pop('alpha', None)  # RidgeCV does not accept 'alpha' as a parameter
-    
-    regression = RidgeCV(**regression_kwargs)
+    if cuda.is_available() and gpu_enabled:
+        _logger.info("Using RidgeGCVTorch for ridge CV regression.")
+        regression = RidgeGCVTorch(**regression_kwargs, store_results_gpu=False)
+    else:
+        _logger.info("Using RidgeCV for ridge CV regression.")
+        regression = RidgeCV(**regression_kwargs)
     xarray_kwargs = xarray_kwargs or {}
     regression = XarrayRegression(regression, **xarray_kwargs)
     return regression
