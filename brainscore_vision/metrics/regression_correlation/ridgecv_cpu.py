@@ -85,6 +85,7 @@ class RidgeGCVCPU(_RidgeGCV):
                             stimuli_identifier,
                             number_of_trials,
                             require_variance,
+                            benchmark_id,
                             ):
         return self.decompose_eigs(X, sqrt_sw)
 
@@ -94,7 +95,7 @@ class RidgeGCVCPU(_RidgeGCV):
         """
 
         # Check if result is cached based on the benchmark's identifying parameters passed in fitting_kwargs
-        required_cache_params = {'model_id', 'stimuli_identifier', 'number_of_trials', 'require_variance'}
+        required_cache_params = {'model_id', 'stimuli_identifier', 'number_of_trials', 'require_variance', 'benchmark_id'}
         
         if fitting_kwargs is None:
             logger.info("No fitting_kwargs provided - caching disabled, computing decomposition directly")

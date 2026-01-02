@@ -180,7 +180,8 @@ class TrainTestNeuralBenchmark(BenchmarkBase):
         fitting_kwargs = {'model_id': self.current_model,
                           'stimuli_identifier': self.train_stimuli_identifier, 
                           'number_of_trials': self._number_of_trials, 
-                          'require_variance': False}
+                          'require_variance': False,
+                          'benchmark_id': self.identifier}
         raw_score = self._similarity_metric(source_train=self.train_activations,
                                             target_train=train_data,
                                             source_test=self.test_activations,
