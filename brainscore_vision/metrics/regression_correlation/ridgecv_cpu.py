@@ -5,6 +5,7 @@
 # Additionally, we add caching of the eigendecomposition using Brain-Score's result caching system.
 # Source of original: https://github.com/scikit-learn/scikit-learn/blob/71cfff335/sklearn/linear_model/_ridge.py
 
+import torch
 import numpy as np
 from scipy import linalg, sparse
 import xarray as xr
@@ -75,7 +76,17 @@ class RidgeGCVCPU(_RidgeGCV):
             # by centering, it is orthogonal to the other columns
             K += np.outer(sqrt_sw, sqrt_sw)
         logger.info("getting eigvals")
-        eigvals, Q = linalg.eigh(K, driver=self.eigh_driver)
+
+        if torch.cuda.is_available():
+            logger.info("  using GPU for eigh computation")
+            K_tensor = torch.from_numpy(K).to(device='cuda')
+            eigvals_tensor, Q_tensor = torch.linalg.eigh(K_tensor)
+            eigvals = eigvals_tensor.cpu().numpy()
+            Q = Q_tensor.cpu().numpy()
+            torch.cuda.empty_cache()
+        else:
+            logger.info("  using CPU for eigh computation")
+            eigvals, Q = linalg.eigh(K, driver=self.eigh_driver)
         return X_mean, eigvals, Q
 
     
