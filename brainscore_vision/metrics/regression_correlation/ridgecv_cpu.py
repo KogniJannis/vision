@@ -167,6 +167,14 @@ class RidgeGCVCPU(_RidgeGCV):
             y = y.data
             logger.info("y converted")
         
+        # Ensure arrays are writable (DataArray.data may be read-only)
+        if not X.flags.writeable:
+            logger.info("X is read-only, making a copy")
+            X = X.copy()
+        if not y.flags.writeable:
+            logger.info("y is read-only, making a copy")
+            y = y.copy()
+        
         X, y = validate_data(
             self,
             X,
@@ -192,7 +200,7 @@ class RidgeGCVCPU(_RidgeGCV):
         X, y, X_offset, y_offset, X_scale = _preprocess_data(
             X,
             y,
-            fit_intercept=False,
+            fit_intercept=self.fit_intercept, #TODO: confirm this is correct
             copy=self.copy_X,
             sample_weight=sample_weight,
             check_input=self.validate_during_preprocessing,
