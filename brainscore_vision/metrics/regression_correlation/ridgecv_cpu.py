@@ -61,6 +61,29 @@ class RidgeGCVCPU(_RidgeGCV):
             """
             return f"{self.__class__.__name__}(object at {id(self)})"
 
+    def validate_cache_identifiers(self, fitting_kwargs):
+        """
+        Validate that all required identifying parameters are present and not None for caching
+        """ 
+        
+        # Check if result is cached based on the benchmark's identifying parameters passed in fitting_kwargs
+        required_cache_params = {'model_id', 'stimuli_identifier', 'number_of_trials', 'require_variance', 'benchmark_id'}
+
+        provided_params = set(fitting_kwargs.keys())
+        missing_params = required_cache_params - provided_params
+        
+        if missing_params:
+            raise ValueError(
+                f"Caching requires all identifying parameters {required_cache_params}. "
+                f"Missing: {missing_params}. Provided: {provided_params}"
+            )
+        for param in required_cache_params:
+            if fitting_kwargs[param] is None:
+                raise ValueError(
+                    f"Caching requires identifying parameter '{param}' to be not None. "
+                    f"Got None."
+                )
+
     def decompose_eigs(self, X, sqrt_sw):
         """
         This part of the decomposition does not depend on y and can be reused for different neuroids.
@@ -104,29 +127,12 @@ class RidgeGCVCPU(_RidgeGCV):
         """
         Eigendecomposition of X.X^T, used when n_samples <= n_features.
         """
-
-        # Check if result is cached based on the benchmark's identifying parameters passed in fitting_kwargs
-        required_cache_params = {'model_id', 'stimuli_identifier', 'number_of_trials', 'require_variance', 'benchmark_id'}
         
         if fitting_kwargs is None:
             logger.info("No fitting_kwargs provided - caching disabled, computing decomposition directly")
             X_mean, eigvals, Q = self.decompose_eigs(X, sqrt_sw)
         else:
-            # Validate that all required identifying parameters are present and not None for caching
-            provided_params = set(fitting_kwargs.keys())
-            missing_params = required_cache_params - provided_params
-            
-            if missing_params:
-                raise ValueError(
-                    f"Caching requires all identifying parameters {required_cache_params}. "
-                    f"Missing: {missing_params}. Provided: {provided_params}"
-                )
-            for param in required_cache_params:
-                if fitting_kwargs[param] is None:
-                    raise ValueError(
-                        f"Caching requires identifying parameter '{param}' to be not None. "
-                        f"Got None."
-                    )
+            self.validate_cache_identifiers(fitting_kwargs)
 
             logger.info(f"Caching enabled - decomposing with fitting_kwargs: {fitting_kwargs}")
             X_mean, eigvals, Q = self.cache_decomposition(X, sqrt_sw, **fitting_kwargs)
