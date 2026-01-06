@@ -142,7 +142,48 @@ class RidgeGCVCPU(_RidgeGCV):
         logger.info("got eigvals")
         return X_mean, eigvals, Q, QT_y
     
-    def fit(self, X, y, sample_weight=None, score_params=None, fitting_kwargs=None):
+    
+    def svd_decompose(self, X, sqrt_sw):
+        X_mean = np.zeros(X.shape[1], dtype=X.dtype)
+        if self.fit_intercept:
+            # to emulate fit_intercept=True situation, add a column
+            # containing the square roots of the sample weights
+            # by centering, the other columns are orthogonal to that one
+            intercept_column = sqrt_sw[:, None]
+            X = np.hstack((X, intercept_column))
+        logger.info("Computing SVD of X")
+        U, singvals, _ = linalg.svd(X, full_matrices=0)
+        singvals_sq = singvals**2
+        
+        return X, X_mean, singvals_sq, U
+    
+    @store(identifier_ignore=['X', 'sqrt_sw'])
+    def cache_svd(self, X, sqrt_sw,
+                            model_id,
+                            stimuli_identifier,
+                            number_of_trials,
+                            require_variance,
+                            benchmark_id,
+                            ):
+        return self.svd_decompose(X, sqrt_sw)
+    
+    
+    def _svd_decompose_design_matrix(self, X, y, sqrt_sw, fitting_kwargs=None):
+        # X already centered
+        if fitting_kwargs is None:
+            logger.info("No fitting_kwargs provided - caching disabled, computing SVD directly")
+            X, X_mean, singvals_sq, U = self.svd_decompose(X, sqrt_sw)
+        else:
+            self.validate_cache_identifiers(fitting_kwargs)
+            X, X_mean, singvals_sq, U = self.cache_svd(X, sqrt_sw, **fitting_kwargs)
+        UT_y = np.dot(U.T, y)
+        logger.info("SVD computed")
+        return X_mean, singvals_sq, U, UT_y
+    
+
+
+
+    def fit(self, X, y, sample_weight=None, score_params=None, fitting_kwargs=None, internal_test_source=None, internal_test_target=None):
         """Fit Ridge regression model with gcv.
 
         Parameters
