@@ -278,7 +278,7 @@ class RidgeGCVCPU(_RidgeGCV):
                 solve = self._solve_eigen_covariance
             else:
                 logger.info("  and X is dense")
-                decompose = self._svd_decompose_design_matrix
+                decompose = functools.partial(self._svd_decompose_design_matrix, fitting_kwargs=fitting_kwargs)
                 solve = self._solve_svd_design_matrix
 
         n_samples = X.shape[0]
