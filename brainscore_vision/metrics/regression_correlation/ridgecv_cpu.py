@@ -215,6 +215,14 @@ class RidgeGCVCPU(_RidgeGCV):
                     f"validate_during_preprocessing={self.validate_during_preprocessing} and " +\
                     f"copy_X={self.copy_X}")
         
+        # set up logging based on alpha_coord value
+        if fitting_kwargs and 'coord_value' in fitting_kwargs:
+            #remove the coord_value from the fitting kwargs for logging
+            coord_value  = fitting_kwargs.pop('coord_value')
+            logger.info(f"Starting fit for coord_value={coord_value}")
+        else:
+            coord_value = None
+        
         #### Convert Brain-Score's DataArrays 
         if isinstance(X, xr.DataArray):
             logger.info("Converting DataArray X")
@@ -301,8 +309,8 @@ class RidgeGCVCPU(_RidgeGCV):
         best_coef, best_score, best_alpha = None, None, None
         
         logger.info(f"Starting loop over alphas")
+        all_scores = {}
         for i, alpha in enumerate(np.atleast_1d(self.alphas)):
-            logger.info(f"  alpha = {alpha}")
             G_inverse_diag, c = solve(float(alpha), y, sqrt_sw, X_mean, *decomposition)
             if self.scoring is None:
                 squared_errors = (c / G_inverse_diag) ** 2
@@ -330,7 +338,8 @@ class RidgeGCVCPU(_RidgeGCV):
                     scorer=self.scoring,
                     score_params=score_params,
                 )
-
+            logger.info(f"  Alpha {alpha}: score {alpha_score}")
+            all_scores[alpha] = alpha_score
             # Keep track of the best model
             if best_score is None:
                 # initialize
@@ -373,4 +382,9 @@ class RidgeGCVCPU(_RidgeGCV):
                 cv_results_shape = n_samples, n_y, n_alphas
             self.cv_results_ = self.cv_results_.reshape(cv_results_shape)
 
+        #  update the score log with all scores for this coord value
+        if coord_value is not None:
+            score_log = getattr(self, 'score_log', {})
+            score_log[coord_value] = all_scores
+            self.score_log = score_log
         return self

@@ -139,7 +139,8 @@ class TrainTestNeuralBenchmark(BenchmarkBase):
                 score = self.get_score(train_data=train_subset, 
                                        test_data=test_subset,
                                        ceiling_values=subset_ceiling,
-                                       apply_ceiling=self.ceiling_mode)
+                                       apply_ceiling=self.ceiling_mode,
+                                       coord_value=coord_value)
                 score = score.expand_dims(self.alpha_coord)
                 score[self.alpha_coord] = [coord_value]
                 print(score)
@@ -170,7 +171,7 @@ class TrainTestNeuralBenchmark(BenchmarkBase):
                                    apply_ceiling=self.ceiling_mode)
             return score
 
-    def get_score(self, train_data, test_data, ceiling_values, apply_ceiling):
+    def get_score(self, train_data, test_data, ceiling_values, apply_ceiling, coord_value=None):
         """
         train_data : NeuroidAssembly, neural recordings to fit
         test_data : NeuroidAssembly, neural recordings to predict
@@ -181,7 +182,8 @@ class TrainTestNeuralBenchmark(BenchmarkBase):
                           'stimuli_identifier': self.train_stimuli_identifier, 
                           'number_of_trials': self._number_of_trials, 
                           'require_variance': False,
-                          'benchmark_id': self.identifier}
+                          'benchmark_id': self.identifier,
+                          'coord_value': coord_value}
         raw_score = self._similarity_metric(source_train=self.train_activations,
                                             target_train=train_data,
                                             source_test=self.test_activations,
