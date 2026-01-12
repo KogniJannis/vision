@@ -6,6 +6,7 @@ from brainscore_vision.metric_helpers import Defaults
 from brainscore_vision.metrics import Score
 
 
+import logging
 class XarrayRegression:
     """
     Adds alignment-checking, un- and re-packaging, and comparison functionality to a regression.
@@ -19,23 +20,33 @@ class XarrayRegression:
         self._neuroid_coord = neuroid_coord
         self._stimulus_coord = stimulus_coord
         self._target_neuroid_values = None
+        self._logger = logging.getLogger(__name__)
 
     def fit(self, source, target, **kwargs):
+        self._logger.info("Aligning source and target for regression fitting")
         source, target = self._align(source), self._align(target)
+        self._logger.info("Sorting source and target by stimulus coordinate")
         source, target = source.sortby(self._stimulus_coord), target.sortby(self._stimulus_coord)
 
+        self._logger.info("Sorted, now fitting regression model")
         self._regression.fit(source, target, **kwargs)
+        self._logger.info("Fitted regression model, now extracting target neuroid values")
 
         self._target_neuroid_values = {}
         for name, dims, values in walk_coords(target):
             if self._neuroid_dim in dims:
                 assert array_is_element(dims, self._neuroid_dim)
                 self._target_neuroid_values[name] = values
+        self._logger.info("XarrayRegression fit complete")
 
     def predict(self, source):
+        self._logger.info("Aligning source for regression prediction")
         source = self._align(source)
+        self._logger.info("Aligned, now predicting")
         predicted_values = self._regression.predict(source)
+        self._logger.info("Predicted, now packaging prediction")
         prediction = self._package_prediction(predicted_values, source=source)
+        self._logger.info("Packaged prediction, returning from XarrayRegression predict")
         return prediction
 
     def _package_prediction(self, predicted_values, source):

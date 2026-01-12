@@ -11,6 +11,9 @@ from brainscore_vision.model_interface import BrainModel
 from .screen import place_on_screen
 
 
+import logging
+logger = logging.getLogger(__name__)
+
 class NeuralBenchmark(BenchmarkBase):
     def __init__(self, identifier, assembly, similarity_metric, visual_degrees, number_of_trials, **kwargs):
         super(NeuralBenchmark, self).__init__(identifier=identifier, **kwargs)
@@ -98,22 +101,30 @@ class TrainTestNeuralBenchmark(BenchmarkBase):
         self.current_model = candidate.identifier # use model identifier for caching
         
         # get the activations from the train set
+        logger.info("Start of benchmark call")
         train_stimulus_set = self.train_assembly.stimulus_set
         candidate.start_recording(self.region, time_bins=self.timebins)
+        logger.info("Placing train stimuli on screen")
         stimulus_set = place_on_screen(train_stimulus_set, target_visual_degrees=candidate.visual_degrees(),
                                         source_visual_degrees=self._visual_degrees)
+        logger.info("Start of train extraction")
         
         # store new identifier after placing on screen to cache matrices if using ridgecv
         self.train_stimuli_identifier = stimulus_set.identifier
         self.train_activations = candidate.look_at(stimulus_set, number_of_trials=self._number_of_trials)
+        logger.info("End of train extraction")
 
         # get the activations from the test set
         test_stimulus_set = self.test_assembly.stimulus_set
         timebins = timebins_from_assembly(self.test_assembly)
         candidate.start_recording(self.region, time_bins=self.timebins)  
+        logger.info("Placing test stimuli on screen")  
         stimulus_set = place_on_screen(test_stimulus_set, target_visual_degrees=candidate.visual_degrees(),
 									source_visual_degrees=self._visual_degrees)
+        logger.info("Start of test extraction")
         self.test_activations = candidate.look_at(stimulus_set, number_of_trials=self._number_of_trials)
+        logger.info("Placing test stimuli on screen")  
+        logger.info("End of test extraction")
 
         # squeeze time_bin dim if it has length one
         # regression only supports (presentation x neuroids) arrays, but temporal models like CORnet return a time_bin dim
@@ -122,10 +133,12 @@ class TrainTestNeuralBenchmark(BenchmarkBase):
         if 'time_bin' in self.test_activations.dims and self.test_activations.sizes['time_bin'] == 1:
             self.test_activations = self.test_activations.squeeze('time_bin')
 
+        logger.info("Start of scoring")
         if self.alpha_coord is not None:
             scores_dict = {}
             alpha_splits = np.unique(self.train_assembly[self.alpha_coord].values)
             for coord_value in alpha_splits:
+                logger.info(f"Scoring for {self.alpha_coord}={coord_value}, getting subsets")
                 coord_dict = {self.alpha_coord: coord_value}
                 train_subset = select_with_preserved_index(self.train_assembly, coord_dict)
                 test_subset = select_with_preserved_index(self.test_assembly, coord_dict)
@@ -136,6 +149,7 @@ class TrainTestNeuralBenchmark(BenchmarkBase):
                 subset_ceiling = Score(np.mean(np.median(raw_ceilings_slice, axis=1)))
                 subset_ceiling.attrs['raw'] = raw_ceilings_slice
                 
+                logger.info(f"got subsets, calling metric")
                 score = self.get_score(train_data=train_subset, 
                                        test_data=test_subset,
                                        ceiling_values=subset_ceiling,
@@ -145,6 +159,7 @@ class TrainTestNeuralBenchmark(BenchmarkBase):
                 print(score)
                 scores_dict[coord_value] = score
             
+            logger.info("Aggregating scores across alpha_coord splits")
             # the score is the mean of all the individual ceiled scores:
             score = Score(np.mean([s.values for s in scores_dict.values()]))
             
@@ -161,6 +176,7 @@ class TrainTestNeuralBenchmark(BenchmarkBase):
             # (including raw values and ceiling for that split)
             for coord_value in alpha_splits:
                 score.attrs[coord_value] = scores_dict[coord_value]
+            logger.info("End of scoring with alpha_coord")
             return score
 
         else:

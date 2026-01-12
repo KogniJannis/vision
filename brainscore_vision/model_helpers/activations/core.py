@@ -73,12 +73,15 @@ class ActivationsExtractorHelper:
         for hook in self._stimulus_set_hooks.copy().values():  # copy to avoid stale handles
             stimulus_set = hook(stimulus_set)
         stimuli_paths = [str(stimulus_set.get_stimulus(stimulus_id)) for stimulus_id in stimulus_set['stimulus_id']]
+        self._logger.info("Retrieving activations from paths")
         activations = self.from_paths(stimuli_paths=stimuli_paths, layers=layers, stimuli_identifier=stimuli_identifier,
                                       require_variance=require_variance)
+        self._logger.info("Attaching stimulus set metadata")
         activations = attach_stimulus_set_meta(activations,
                                                stimulus_set,
                                                number_of_trials=self._microsaccade_helper.number_of_trials,
                                                require_variance=require_variance)
+        self._logger.info("Finished attaching stimulus set metadata")
         return activations
 
     def from_paths(self, stimuli_paths, layers, stimuli_identifier=None, require_variance=None):
@@ -100,9 +103,13 @@ class ActivationsExtractorHelper:
             # we first reduce them to only the paths that need to be run individually, compute activations for those,
             # and then expand the activations to all paths again. This is done here, before storing, so that we only
             # store the reduced activations.
+            self._logger.info("Reducing duplicate stimulus paths for activation extraction")
             reduced_paths = self._reduce_paths(stimuli_paths)
+            self._logger.info(f"Reduced path, now extracting activations")
             activations = fnc(layers=layers, stimuli_paths=reduced_paths, require_variance=require_variance)
+            self._logger.info("Expanding activations to original stimulus paths")
             activations = self._expand_paths(activations, original_paths=stimuli_paths)
+            self._logger.info("Finished expanding activations")
         return activations
 
     @store_xarray(identifier_ignore=['stimuli_paths', 'layers'], combine_fields={'layers': 'layer'})
@@ -124,10 +131,13 @@ class ActivationsExtractorHelper:
 
     def _expand_paths(self, activations, original_paths):
         activations_paths = activations['stimulus_path'].values
+        self._logger.info("getting argsort indices")
         argsort_indices = np.argsort(activations_paths)
+        self._logger.info("getting searchsorted indices")
         sorted_x = activations_paths[argsort_indices]
         sorted_index = np.searchsorted(sorted_x, original_paths)
         index = [argsort_indices[i] for i in sorted_index]
+        self._logger.info("index obtained, returning expanded activations")
         return activations[{'presentation': index}]
 
     def register_batch_activations_hook(self, hook):
@@ -160,6 +170,7 @@ class ActivationsExtractorHelper:
 
     def _get_activations_batched(self, paths, layers, batch_size: int, require_variance: bool):
         layer_activations = OrderedDict()
+        self._logger.info("Beginning batched activation extraction loop")
         for batch_start in tqdm(range(0, len(paths), batch_size), unit_scale=batch_size, desc="activations"):
             batch_end = min(batch_start + batch_size, len(paths))
             batch_inputs = paths[batch_start:batch_end]
@@ -189,9 +200,11 @@ class ActivationsExtractorHelper:
                 layer_activations.setdefault(layer_name, []).append(layer_output)
 
         # concat all batches
+        self._logger.info("Concatenating all batches")
         for layer_name, layer_outputs in layer_activations.items():
             layer_activations[layer_name] = np.concatenate(layer_outputs)
 
+        self._logger.info("Concatenated, finished batched activation extraction")
         return layer_activations  # this is all batches
 
     def _get_batch_activations(self, inputs, layer_names, batch_size: int, require_variance: bool = False,
@@ -230,8 +243,8 @@ class ActivationsExtractorHelper:
 
     def _package(self, layer_activations, stimuli_paths, require_variance: bool):
         shapes = [a.shape for a in layer_activations.values()]
-        self._logger.debug(f"Activations shapes: {shapes}")
-        self._logger.debug("Packaging individual layers")
+        self._logger.info(f"Activations shapes: {shapes}")
+        self._logger.info("Packaging individual layers")
         layer_assemblies = [self._package_layer(single_layer_activations,
                                                 layer=layer,
                                                 stimuli_paths=stimuli_paths,
@@ -241,7 +254,7 @@ class ActivationsExtractorHelper:
         # complication: (non)neuroid_coords are taken from the structure of layer_assemblies[0] i.e. the 1st assembly;
         # using these names/keys for all assemblies results in KeyError if the first layer contains flatten_coord_names
         # (see _package_layer) not present in later layers, e.g. first layer = conv, later layer = transformer layer
-        self._logger.debug(f"Merging {len(layer_assemblies)} layer assemblies")
+        self._logger.info(f"Merging {len(layer_assemblies)} layer assemblies")
         model_assembly = np.concatenate([a.values for a in layer_assemblies],
                                         axis=layer_assemblies[0].dims.index('neuroid'))
         nonneuroid_coords = {coord: (dims, values) for coord, dims, values in walk_coords(layer_assemblies[0])
