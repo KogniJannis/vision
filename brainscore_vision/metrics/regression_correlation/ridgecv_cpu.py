@@ -15,6 +15,8 @@ from sklearn.utils.validation import _check_sample_weight, validate_data
 from sklearn.linear_model._base import _preprocess_data, _rescale_data
 from sklearn.linear_model._ridge import _RidgeGCV, _check_gcv_mode
 
+import torch
+
 import logging
 logger = logging.getLogger(__name__)
 
@@ -75,7 +77,18 @@ class RidgeGCVCPU(_RidgeGCV):
             # by centering, it is orthogonal to the other columns
             K += np.outer(sqrt_sw, sqrt_sw)
         logger.info("getting eigvals")
-        eigvals, Q = linalg.eigh(K, driver=self.eigh_driver)
+        # previously: eigvals, Q = linalg.eigh(K, driver=self.eigh_driver)
+        # now:
+        if torch.cuda.is_available():
+            logger.info("  using GPU for eigh computation")
+            K_tensor = torch.from_numpy(K).to(device='cuda')
+            eigvals_tensor, Q_tensor = torch.linalg.eigh(K_tensor)
+            eigvals = eigvals_tensor.cpu().numpy()
+            Q = Q_tensor.cpu().numpy()
+            torch.cuda.empty_cache()
+        else:
+            logger.info("  using CPU for eigh computation")
+            eigvals, Q = linalg.eigh(K, driver=self.eigh_driver)
         return X_mean, eigvals, Q
 
     
