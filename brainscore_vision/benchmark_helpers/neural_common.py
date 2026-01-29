@@ -188,7 +188,7 @@ class TrainTestNeuralBenchmark(BenchmarkBase):
                                             target_train=train_data,
                                             source_test=self.test_activations,
                                             target_test=test_data,
-                                            fitting_kwargs=fitting_kwargs)
+                                            **({'fitting_kwargs': fitting_kwargs} if 'ridgecv' in str(self.identifier) else {}))        
         ceiled_score = apply_ceiling(raw_score, ceiling_values)
         return ceiled_score
 
